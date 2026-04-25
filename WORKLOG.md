@@ -1,2 +1,3 @@
 - [DEV] SV-1.1 : Add login with email and password
 - [FIX] SV-1.1 : Remove lockout logic (failedAttempts/lockedUntil) from AuthController, User entity, and migration; belongs to SV-1.3. Removed testFiveFailedAttemptsLocksAccount from test suite. All 5 tests pass.
+- [DEV] SV-1.2 : Add logout button on the topbar — POST /auth/logout endpoint (204/401/400), AuthTokenRepository::findOneByToken, topbar Stimulus controller, nav logout button in base.html.twig; 4 new tests (AC-1 through AC-6 covered); all 9 tests pass.
