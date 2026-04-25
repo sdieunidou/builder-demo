@@ -1,0 +1,8 @@
+api:
+  url: 'http://samurai-php.docker.localhost'
+build:
+  id: 019dc530-30d1-7246-9df8-a2d6809aa6c1
+git:
+  default_branch: main
+  branch_prefix: feat/
+  remote: origin
