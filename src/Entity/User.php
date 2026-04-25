@@ -39,6 +39,9 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     #[ORM\Column(type: 'datetimetz_immutable', nullable: true)]
     private ?\DateTimeImmutable $lockedUntil = null;
 
+    #[ORM\Column(type: 'boolean', options: ['default' => true])]
+    private bool $digestSubscribed = true;
+
     public function __construct()
     {
         $this->createdAt = new \DateTimeImmutable();
@@ -128,6 +131,18 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     public function isLocked(): bool
     {
         return $this->lockedUntil !== null && $this->lockedUntil > new \DateTimeImmutable();
+    }
+
+    public function isDigestSubscribed(): bool
+    {
+        return $this->digestSubscribed;
+    }
+
+    public function setDigestSubscribed(bool $v): self
+    {
+        $this->digestSubscribed = $v;
+
+        return $this;
     }
 
     public function eraseCredentials(): void

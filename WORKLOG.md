@@ -4,3 +4,4 @@
 SV-1.1 | 2026-04-25 | implemented login with email and password
 - [DEV] SV-1.2 : Add logout button on the topbar
 - [DEV] SV-1.3 : Add lockout after 5 bad attempts
+- [DEV] SV-2.1 : Add daily report email digest — DigestReportBuilder (KPI aggregation), DigestMailer (TemplatedEmail HTML+text via Symfony Mailer), DigestScheduledCommand (app:digest:send), digest_subscribed boolean on users table (default true), system cron at 07:00; 3 unit test classes; all tests pass.

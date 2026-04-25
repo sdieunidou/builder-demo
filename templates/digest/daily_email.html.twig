@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Daily Digest — {{ report_date }}</title>
+</head>
+<body>
+    <h1>Daily Digest — {{ report_date }}</h1>
+
+    <table>
+        <tbody>
+            <tr>
+                <th>New users</th>
+                <td>{{ report.new_users }}</td>
+            </tr>
+            <tr>
+                <th>Total users</th>
+                <td>{{ report.total_users }}</td>
+            </tr>
+        </tbody>
+    </table>
+</body>
+</html>
