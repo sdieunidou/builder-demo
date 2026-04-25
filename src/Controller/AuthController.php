@@ -117,7 +117,7 @@ class AuthController extends AbstractController
             );
         }
 
-        $this->entityManager->remove($authToken);
+        $this->authTokenRepository->invalidate($authToken);
         $this->entityManager->flush();
 
         return new Response(null, Response::HTTP_NO_CONTENT);

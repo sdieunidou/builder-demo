@@ -20,6 +20,17 @@ class AuthTokenRepository extends ServiceEntityRepository
 
     public function findOneByToken(string $token): ?AuthToken
     {
-        return $this->findOneBy(['token' => $token]);
+        $authToken = $this->findOneBy(['token' => $token]);
+
+        if ($authToken === null || !$authToken->isValid()) {
+            return null;
+        }
+
+        return $authToken;
+    }
+
+    public function invalidate(AuthToken $token): void
+    {
+        $token->setInvalidatedAt(new \DateTimeImmutable());
     }
 }
