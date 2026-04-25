@@ -1,0 +1,126 @@
+<?php
+
+declare(strict_types=1);
+
+namespace App\Tests\Controller;
+
+use App\Entity\User;
+use Doctrine\ORM\EntityManagerInterface;
+use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
+use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
+
+class AuthControllerTest extends WebTestCase
+{
+    private function createUser(string $email, string $plainPassword): User
+    {
+        $container = static::getContainer();
+        /** @var EntityManagerInterface $em */
+        $em = $container->get(EntityManagerInterface::class);
+        /** @var UserPasswordHasherInterface $hasher */
+        $hasher = $container->get(UserPasswordHasherInterface::class);
+
+        $user = new User();
+        $user->setEmail($email);
+        $user->setPassword($hasher->hashPassword($user, $plainPassword));
+
+        $em->persist($user);
+        $em->flush();
+
+        return $user;
+    }
+
+    public function testLoginSuccessReturnsToken(): void
+    {
+        $client = static::createClient();
+        $this->createUser('valid@example.com', 'correct-password');
+
+        $client->request(
+            'POST',
+            '/auth/login',
+            [],
+            [],
+            ['CONTENT_TYPE' => 'application/json'],
+            json_encode(['email' => 'valid@example.com', 'password' => 'correct-password'], \JSON_THROW_ON_ERROR)
+        );
+
+        $this->assertResponseIsSuccessful();
+        $data = json_decode($client->getResponse()->getContent(), true);
+        $this->assertArrayHasKey('token', $data);
+        $this->assertArrayHasKey('expires_at', $data);
+        $this->assertSame(64, strlen($data['token']));
+    }
+
+    public function testLoginWrongPasswordReturns401(): void
+    {
+        $client = static::createClient();
+        $this->createUser('valid2@example.com', 'correct-password');
+
+        $client->request(
+            'POST',
+            '/auth/login',
+            [],
+            [],
+            ['CONTENT_TYPE' => 'application/json'],
+            json_encode(['email' => 'valid2@example.com', 'password' => 'wrong-password'], \JSON_THROW_ON_ERROR)
+        );
+
+        $this->assertResponseStatusCodeSame(401);
+        $data = json_decode($client->getResponse()->getContent(), true);
+        $this->assertSame('Invalid credentials', $data['error']);
+    }
+
+    public function testLoginUnknownEmailReturns401(): void
+    {
+        $client = static::createClient();
+
+        $client->request(
+            'POST',
+            '/auth/login',
+            [],
+            [],
+            ['CONTENT_TYPE' => 'application/json'],
+            json_encode(['email' => 'nobody@example.com', 'password' => 'some-password'], \JSON_THROW_ON_ERROR)
+        );
+
+        $this->assertResponseStatusCodeSame(401);
+        $data = json_decode($client->getResponse()->getContent(), true);
+        $this->assertSame('Invalid credentials', $data['error']);
+    }
+
+    public function testLoginMissingFieldsReturns400(): void
+    {
+        $client = static::createClient();
+
+        $client->request(
+            'POST',
+            '/auth/login',
+            [],
+            [],
+            ['CONTENT_TYPE' => 'application/json'],
+            json_encode(['email' => 'user@example.com'], \JSON_THROW_ON_ERROR)
+        );
+
+        $this->assertResponseStatusCodeSame(400);
+        $data = json_decode($client->getResponse()->getContent(), true);
+        $this->assertSame('email and password are required', $data['error']);
+    }
+
+    public function testLoginMissingEmailReturns400(): void
+    {
+        $client = static::createClient();
+
+        $client->request(
+            'POST',
+            '/auth/login',
+            [],
+            [],
+            ['CONTENT_TYPE' => 'application/json'],
+            json_encode(['password' => 'some-password'], \JSON_THROW_ON_ERROR)
+        );
+
+        $this->assertResponseStatusCodeSame(400);
+        $data = json_decode($client->getResponse()->getContent(), true);
+        $this->assertSame('email and password are required', $data['error']);
+    }
+
+}

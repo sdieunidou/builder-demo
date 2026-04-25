@@ -1,0 +1,2 @@
+- [DEV] SV-1.1 : Add login with email and password
+- [FIX] SV-1.1 : Remove lockout logic (failedAttempts/lockedUntil) from AuthController, User entity, and migration; belongs to SV-1.3. Removed testFiveFailedAttemptsLocksAccount from test suite. All 5 tests pass.
