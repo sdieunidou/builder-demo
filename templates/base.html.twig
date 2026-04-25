@@ -20,7 +20,13 @@
     </head>
     <body>
         <nav>
-            <button data-controller="topbar" data-action="click->topbar#logout">Logout</button>
+            {% if app.user %}
+            <button
+                data-controller="logout"
+                data-action="click->logout#submit"
+                type="button"
+            >Logout</button>
+            {% endif %}
         </nav>
         {% block body %}{% endblock %}
     </body>

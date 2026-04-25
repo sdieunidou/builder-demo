@@ -31,6 +31,9 @@ class AuthToken
     #[ORM\Column(type: Types::DATETIMETZ_IMMUTABLE)]
     private \DateTimeImmutable $expiresAt;
 
+    #[ORM\Column(type: Types::DATETIMETZ_IMMUTABLE, nullable: true)]
+    private ?\DateTimeImmutable $invalidatedAt = null;
+
     public function __construct()
     {
         $this->createdAt = new \DateTimeImmutable();
@@ -81,5 +84,22 @@ class AuthToken
         $this->expiresAt = $expiresAt;
 
         return $this;
+    }
+
+    public function getInvalidatedAt(): ?\DateTimeImmutable
+    {
+        return $this->invalidatedAt;
+    }
+
+    public function setInvalidatedAt(\DateTimeImmutable $invalidatedAt): static
+    {
+        $this->invalidatedAt = $invalidatedAt;
+
+        return $this;
+    }
+
+    public function isValid(): bool
+    {
+        return $this->invalidatedAt === null && $this->expiresAt > new \DateTimeImmutable();
     }
 }
