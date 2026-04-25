@@ -1,0 +1,9 @@
+# /etc/cron.d/app — application scheduled tasks
+SHELL=/bin/sh
+PATH=/usr/local/sbin:/usr/local/bin:/sbin:/bin:/usr/sbin:/usr/bin
+
+# Daily digest email at 07:00 every day
+0 7 * * *  app_user php /var/www/app/bin/console app:digest:send
+
+# Weekly KPI report email at 07:00 every Monday
+0 7 * * 1  app_user php /var/www/app/bin/console app:report:weekly

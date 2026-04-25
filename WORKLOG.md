@@ -22,3 +22,4 @@ SV-1.1 | 2026-04-25 | implemented login with email and password
 - Tests: CsvReportExporterTest (unit, 5 cases), ReportExportControllerTest (functional, 6 cases)
 - No database migration required
 - [DEV] SV-2.3 : Export reports to CSV
+- [DEV] SV-2.4 : Schedule reports on Mondays

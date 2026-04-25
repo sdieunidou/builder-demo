@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Weekly Report — {{ kpis.week_start }} – {{ kpis.week_end }}</title>
+</head>
+<body>
+    <h1>Weekly Report — {{ kpis.week_start }} – {{ kpis.week_end }}</h1>
+
+    <table>
+        <tbody>
+            <tr>
+                <th>New users</th>
+                <td>{{ kpis.new_users }}</td>
+            </tr>
+            <tr>
+                <th>Total users</th>
+                <td>{{ kpis.total_users }}</td>
+            </tr>
+        </tbody>
+    </table>
+</body>
+</html>
