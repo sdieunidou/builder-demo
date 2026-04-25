@@ -13,3 +13,12 @@ SV-1.1 | 2026-04-25 | implemented login with email and password
 - New: templates/dashboard/weekly.html.twig (new_users + total_users KPI cards, week range label)
 - Tests: WeeklyKpiBuilderTest (unit, 2 cases), DashboardControllerTest (functional, 4 cases)
 - All tests pass
+## SV-2.3 — Export reports to CSV
+
+- GET /reports/export/csv?type={weekly|daily} (Bearer-protected, CSV download)
+- New: CsvReportExporter service (php://temp + fputcsv, CSV injection sanitisation)
+- New: ReportExportController (delegates to WeeklyKpiBuilder or DigestReportBuilder)
+- Response headers: Content-Type text/csv, Content-Disposition attachment, Cache-Control no-store, X-Content-Type-Options nosniff
+- Tests: CsvReportExporterTest (unit, 5 cases), ReportExportControllerTest (functional, 6 cases)
+- No database migration required
+- [DEV] SV-2.3 : Export reports to CSV
