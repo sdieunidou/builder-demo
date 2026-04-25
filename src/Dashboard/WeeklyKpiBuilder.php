@@ -6,7 +6,7 @@ namespace App\Dashboard;
 
 use App\Repository\UserRepository;
 
-final class WeeklyKpiBuilder
+class WeeklyKpiBuilder
 {
     public function __construct(
         private readonly UserRepository $userRepository,

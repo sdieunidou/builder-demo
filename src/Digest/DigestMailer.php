@@ -42,4 +42,24 @@ final class DigestMailer implements DigestMailerInterface
 
         $this->mailer->send($email);
     }
+
+    /**
+     * Sends the weekly KPI report email to the given user.
+     *
+     * @param array<string, mixed> $kpis
+     */
+    public function sendWeekly(User $user, array $kpis): void
+    {
+        $subject = sprintf('Weekly Report — %s – %s', $kpis['week_start'] ?? 'N/A', $kpis['week_end'] ?? 'N/A');
+
+        $email = (new TemplatedEmail())
+            ->from(new Address($this->mailerFrom))
+            ->to(new Address($user->getEmail()))
+            ->subject($subject)
+            ->htmlTemplate('email/weekly_report.html.twig')
+            ->textTemplate('email/weekly_report.txt.twig')
+            ->context(['kpis' => $kpis]);
+
+        $this->mailer->send($email);
+    }
 }
