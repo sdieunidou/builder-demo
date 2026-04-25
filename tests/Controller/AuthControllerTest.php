@@ -225,4 +225,181 @@ class AuthControllerTest extends WebTestCase
         $this->assertResponseStatusCodeSame(401);
     }
 
+    // ── SV-1.3 lockout tests ───────────────────────────────────────────────
+
+    private function createLockedUser(string $email, string $plainPassword, ?\DateTimeImmutable $lockedUntil, int $failedAttempts = 0): User
+    {
+        $container = static::getContainer();
+        /** @var EntityManagerInterface $em */
+        $em = $container->get(EntityManagerInterface::class);
+        /** @var UserPasswordHasherInterface $hasher */
+        $hasher = $container->get(UserPasswordHasherInterface::class);
+
+        $user = new User();
+        $user->setEmail($email);
+        $user->setPassword($hasher->hashPassword($user, $plainPassword));
+        $user->setLockedUntil($lockedUntil);
+        $user->setFailedAttempts($failedAttempts);
+
+        $em->persist($user);
+        $em->flush();
+
+        return $user;
+    }
+
+    public function testFourFailedAttemptsDoNotLockAccount(): void
+    {
+        $client = static::createClient();
+        $this->createUser('lockout_4@example.com', 'correct');
+
+        for ($i = 0; $i < 4; ++$i) {
+            $client->request(
+                'POST',
+                '/auth/login',
+                [],
+                [],
+                ['CONTENT_TYPE' => 'application/json'],
+                json_encode(['email' => 'lockout_4@example.com', 'password' => 'wrong'], \JSON_THROW_ON_ERROR)
+            );
+            $this->assertResponseStatusCodeSame(401, "Attempt $i should return 401");
+        }
+    }
+
+    public function testFiveFailedAttemptsLocksAccount(): void
+    {
+        $client = static::createClient();
+        $this->createUser('lockout_5@example.com', 'correct');
+
+        for ($i = 0; $i < 5; ++$i) {
+            $client->request(
+                'POST',
+                '/auth/login',
+                [],
+                [],
+                ['CONTENT_TYPE' => 'application/json'],
+                json_encode(['email' => 'lockout_5@example.com', 'password' => 'wrong'], \JSON_THROW_ON_ERROR)
+            );
+            $this->assertResponseStatusCodeSame(401, "Attempt $i should return 401");
+        }
+
+        // 6th attempt — account should now be locked
+        $client->request(
+            'POST',
+            '/auth/login',
+            [],
+            [],
+            ['CONTENT_TYPE' => 'application/json'],
+            json_encode(['email' => 'lockout_5@example.com', 'password' => 'wrong'], \JSON_THROW_ON_ERROR)
+        );
+        $this->assertResponseStatusCodeSame(423);
+    }
+
+    public function testLockedAccountReturns423WithRetryAfterHeader(): void
+    {
+        $client = static::createClient();
+        $this->createLockedUser('locked@example.com', 'correct', new \DateTimeImmutable('+15 minutes'));
+
+        $client->request(
+            'POST',
+            '/auth/login',
+            [],
+            [],
+            ['CONTENT_TYPE' => 'application/json'],
+            json_encode(['email' => 'locked@example.com', 'password' => 'wrong'], \JSON_THROW_ON_ERROR)
+        );
+
+        $this->assertResponseStatusCodeSame(423);
+        $response = $client->getResponse();
+        $this->assertTrue($response->headers->has('Retry-After'));
+        $this->assertGreaterThan(0, (int) $response->headers->get('Retry-After'));
+        $data = json_decode($response->getContent(), true);
+        $this->assertStringStartsWith('Account locked.', $data['error']);
+    }
+
+    public function testLockedAccountIgnoresCorrectPassword(): void
+    {
+        $client = static::createClient();
+        $this->createLockedUser('locked_correct@example.com', 'correct', new \DateTimeImmutable('+15 minutes'));
+
+        $client->request(
+            'POST',
+            '/auth/login',
+            [],
+            [],
+            ['CONTENT_TYPE' => 'application/json'],
+            json_encode(['email' => 'locked_correct@example.com', 'password' => 'correct'], \JSON_THROW_ON_ERROR)
+        );
+
+        $this->assertResponseStatusCodeSame(423);
+    }
+
+    public function testSuccessfulLoginAfterLockoutExpiry(): void
+    {
+        $client = static::createClient();
+        $this->createLockedUser('expired_lock@example.com', 'correct', new \DateTimeImmutable('-1 minute'), 3);
+
+        $client->request(
+            'POST',
+            '/auth/login',
+            [],
+            [],
+            ['CONTENT_TYPE' => 'application/json'],
+            json_encode(['email' => 'expired_lock@example.com', 'password' => 'correct'], \JSON_THROW_ON_ERROR)
+        );
+
+        $this->assertResponseStatusCodeSame(200);
+
+        // Verify counters were reset
+        $container = static::getContainer();
+        /** @var EntityManagerInterface $em */
+        $em = $container->get(EntityManagerInterface::class);
+        $em->clear();
+        /** @var User|null $user */
+        $user = $em->getRepository(User::class)->findOneBy(['email' => 'expired_lock@example.com']);
+        $this->assertNotNull($user);
+        $this->assertSame(0, $user->getFailedAttempts());
+        $this->assertNull($user->getLockedUntil());
+    }
+
+    public function testSuccessfulLoginResetsFailedAttempts(): void
+    {
+        $client = static::createClient();
+        $this->createUser('reset_attempts@example.com', 'correct');
+
+        // 3 wrong attempts
+        for ($i = 0; $i < 3; ++$i) {
+            $client->request(
+                'POST',
+                '/auth/login',
+                [],
+                [],
+                ['CONTENT_TYPE' => 'application/json'],
+                json_encode(['email' => 'reset_attempts@example.com', 'password' => 'wrong'], \JSON_THROW_ON_ERROR)
+            );
+            $this->assertResponseStatusCodeSame(401);
+        }
+
+        // Correct login
+        $client->request(
+            'POST',
+            '/auth/login',
+            [],
+            [],
+            ['CONTENT_TYPE' => 'application/json'],
+            json_encode(['email' => 'reset_attempts@example.com', 'password' => 'correct'], \JSON_THROW_ON_ERROR)
+        );
+        $this->assertResponseStatusCodeSame(200);
+
+        // Verify counters were reset
+        $container = static::getContainer();
+        /** @var EntityManagerInterface $em */
+        $em = $container->get(EntityManagerInterface::class);
+        $em->clear();
+        /** @var User|null $user */
+        $user = $em->getRepository(User::class)->findOneBy(['email' => 'reset_attempts@example.com']);
+        $this->assertNotNull($user);
+        $this->assertSame(0, $user->getFailedAttempts());
+        $this->assertNull($user->getLockedUntil());
+    }
+
 }

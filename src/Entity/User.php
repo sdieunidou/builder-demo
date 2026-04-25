@@ -33,6 +33,12 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     #[ORM\Column(type: Types::DATETIMETZ_IMMUTABLE)]
     private \DateTimeImmutable $createdAt;
 
+    #[ORM\Column(type: 'integer', options: ['default' => 0])]
+    private int $failedAttempts = 0;
+
+    #[ORM\Column(type: 'datetimetz_immutable', nullable: true)]
+    private ?\DateTimeImmutable $lockedUntil = null;
+
     public function __construct()
     {
         $this->createdAt = new \DateTimeImmutable();
@@ -93,6 +99,35 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     public function getCreatedAt(): \DateTimeImmutable
     {
         return $this->createdAt;
+    }
+
+    public function getFailedAttempts(): int
+    {
+        return $this->failedAttempts;
+    }
+
+    public function setFailedAttempts(int $n): static
+    {
+        $this->failedAttempts = $n;
+
+        return $this;
+    }
+
+    public function getLockedUntil(): ?\DateTimeImmutable
+    {
+        return $this->lockedUntil;
+    }
+
+    public function setLockedUntil(?\DateTimeImmutable $dt): static
+    {
+        $this->lockedUntil = $dt;
+
+        return $this;
+    }
+
+    public function isLocked(): bool
+    {
+        return $this->lockedUntil !== null && $this->lockedUntil > new \DateTimeImmutable();
     }
 
     public function eraseCredentials(): void

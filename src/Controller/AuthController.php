@@ -19,6 +19,7 @@ use Symfony\Component\Routing\Attribute\Route;
 
 class AuthController extends AbstractController
 {
+    private const LOCKOUT_MINUTES = 15;
     public function __construct(
         private readonly UserRepository $userRepository,
         private readonly AuthTokenRepository $authTokenRepository,
@@ -54,12 +55,33 @@ class AuthController extends AbstractController
                 );
             }
 
+            if ($user->isLocked()) {
+                $retryAfter = $user->getLockedUntil()->getTimestamp() - time();
+
+                return $this->json(
+                    ['error' => 'Account locked. Try again after ' . $user->getLockedUntil()->format(\DateTimeInterface::ATOM)],
+                    Response::HTTP_LOCKED,
+                    ['Retry-After' => max(0, $retryAfter)]
+                );
+            }
+
             if (!$this->passwordHasher->isPasswordValid($user, $password)) {
+                $attempts = $user->getFailedAttempts() + 1;
+                if ($attempts >= 5) {
+                    $user->setLockedUntil(new \DateTimeImmutable('+' . self::LOCKOUT_MINUTES . ' minutes'));
+                    $user->setFailedAttempts(0);
+                } else {
+                    $user->setFailedAttempts($attempts);
+                }
+                $this->entityManager->flush();
+
                 return $this->json(
                     ['error' => 'Invalid credentials'],
                     Response::HTTP_UNAUTHORIZED
                 );
             }
+
+            $user->setFailedAttempts(0)->setLockedUntil(null);
 
             $tokenValue = bin2hex(random_bytes(32));
 
