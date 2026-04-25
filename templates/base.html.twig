@@ -19,6 +19,9 @@
         {% endif %}
     </head>
     <body>
+        <nav>
+            <button data-controller="topbar" data-action="click->topbar#logout">Logout</button>
+        </nav>
         {% block body %}{% endblock %}
     </body>
 </html>

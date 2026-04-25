@@ -6,6 +6,7 @@ namespace App\Controller;
 
 use App\Entity\AuthToken;
 use App\Entity\User;
+use App\Repository\AuthTokenRepository;
 use App\Repository\UserRepository;
 use Doctrine\ORM\EntityManagerInterface;
 use Psr\Log\LoggerInterface;
@@ -20,6 +21,7 @@ class AuthController extends AbstractController
 {
     public function __construct(
         private readonly UserRepository $userRepository,
+        private readonly AuthTokenRepository $authTokenRepository,
         private readonly EntityManagerInterface $entityManager,
         private readonly UserPasswordHasherInterface $passwordHasher,
         private readonly LoggerInterface $logger,
@@ -83,5 +85,41 @@ class AuthController extends AbstractController
                 Response::HTTP_INTERNAL_SERVER_ERROR
             );
         }
+    }
+
+    #[Route('/auth/logout', name: 'auth_logout', methods: ['POST'])]
+    public function logout(Request $request): Response
+    {
+        $authorizationHeader = $request->headers->get('Authorization', '');
+
+        if (!str_starts_with($authorizationHeader, 'Bearer ')) {
+            return $this->json(
+                ['error' => 'Authorization header missing or malformed'],
+                Response::HTTP_BAD_REQUEST
+            );
+        }
+
+        $token = substr($authorizationHeader, strlen('Bearer '));
+
+        if ($token === '') {
+            return $this->json(
+                ['error' => 'Authorization header missing or malformed'],
+                Response::HTTP_BAD_REQUEST
+            );
+        }
+
+        $authToken = $this->authTokenRepository->findOneByToken($token);
+
+        if ($authToken === null) {
+            return $this->json(
+                ['error' => 'Invalid or expired token'],
+                Response::HTTP_UNAUTHORIZED
+            );
+        }
+
+        $this->entityManager->remove($authToken);
+        $this->entityManager->flush();
+
+        return new Response(null, Response::HTTP_NO_CONTENT);
     }
 }
