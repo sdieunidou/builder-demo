@@ -5,3 +5,11 @@ SV-1.1 | 2026-04-25 | implemented login with email and password
 - [DEV] SV-1.2 : Add logout button on the topbar
 - [DEV] SV-1.3 : Add lockout after 5 bad attempts
 - [DEV] SV-2.1 : Add daily report email digest — DigestReportBuilder (KPI aggregation), DigestMailer (TemplatedEmail HTML+text via Symfony Mailer), DigestScheduledCommand (app:digest:send), digest_subscribed boolean on users table (default true), system cron at 07:00; 3 unit test classes; all tests pass.
+## SV-2.2 — Weekly KPI dashboard
+
+- GET /dashboard/weekly (Bearer-protected, HTML response)
+- New: WeeklyKpiBuilder service (week-boundary logic, delegates to UserRepository)
+- New: UserRepository::countCreatedBetween(), UserRepository::countAll()
+- New: templates/dashboard/weekly.html.twig (new_users + total_users KPI cards, week range label)
+- Tests: WeeklyKpiBuilderTest (unit, 2 cases), DashboardControllerTest (functional, 4 cases)
+- All tests pass
