@@ -3,3 +3,4 @@
 - [DEV] SV-1.2 : Add logout button on the topbar — POST /auth/logout endpoint (204/401/400), AuthTokenRepository::findOneByToken, topbar Stimulus controller, nav logout button in base.html.twig; 4 new tests (AC-1 through AC-6 covered); all 9 tests pass.
 SV-1.1 | 2026-04-25 | implemented login with email and password
 - [DEV] SV-1.2 : Add logout button on the topbar
+- [DEV] SV-1.3 : Add lockout after 5 bad attempts
